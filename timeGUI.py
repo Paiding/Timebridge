@@ -68,13 +68,13 @@ class TimeBridgeGUI(QWidget):
         text = "x: {0},  y: {1}".format(x, y)
         self.label.setText(text)
 
-        if (200 <= e.x() <= 600) && (180 <= e.y() <= 520):
+        if (e.x() >= 200 and e.x() <= 600) and (e.y() >=180 and e.y() <= 520):
         	quest_state_0 = 10 * y + x
 
     def paintEvent(self, e):
         qp = QPainter()
         qp.begin(self)
-        self.drawPlayerArea(qp)
+        self.draw_player_area(qp)
         qp.end()
 
     def draw_player_area(self, qp):
@@ -108,11 +108,11 @@ class TimeBridgeGUI(QWidget):
         qp.drawLine(440, 180, 440, 520)
         qp.drawLine(520, 180, 520, 520)
 
-    def bid_map(xb, yb)
+    def bid_map(xb, yb):
     #将叫牌区格位映射到坐标
     	return (80 * x + 200, 48 * y + 180, 80, 48)
 
-    def bid_update(self, BidPlayer, BidResult)
+    def bid_update(self, BidPlayer, BidResult):
     	xb = BidResult % 10
     	yb = BidResult / 10
     	qp = QPainter()
@@ -122,14 +122,13 @@ class TimeBridgeGUI(QWidget):
     	qp.setBrush(Qcolor(200, 200, 200))#把失效区域涂灰
     	for x in range(0, 4):
     		for y in range(0, 6):
-    			if (y < yb || (y = yb && x < xb)):
+    			if (y < yb or (y == yb and x < xb)):
     				qp.drawRect(bid_map(x, y))
 
-   	def highlight_quest(self, area)
-   		if area == 0:
-   			return quest_state_0
-   		
-
+    def highlight_quest(self, area):
+        if area == 0:
+            return self.quest_state_0
+   
     def handle_click(self):
         if not self.isVisible():
             self.show()
