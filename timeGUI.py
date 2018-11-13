@@ -5,6 +5,7 @@ import sys
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
+from enum import Enum
 
 class welcomePage(QMainWindow):
     
@@ -46,6 +47,23 @@ class TimeBridgeGUI(QWidget):
         x = 0
         y = 0
         
+        #配合highlight_quest使用
+        self.quest_state_0 = 0
+        self.quest_state_1 = 0
+        self.quest_state_2 = 0
+
+        self.quest_reseived = 0
+
+        #用于调试绘图功能
+        self.test_state = 1
+
+        #用于确定paintEvent调用哪一部分绘图函数
+        self.paint_stage = 1 #0叫牌，1打牌
+        self.paint_flag = 0 #0重绘，1更新
+        self.paint_beaker_1 = 0 #参见bid_update
+        self.paint_beaker_2 = 0
+
+
         self.text = "x: {0},  y: {1}".format(x, y)
         #self.setMouseTracking(True)
         self.label = QLabel(self.text, self)
@@ -55,11 +73,6 @@ class TimeBridgeGUI(QWidget):
         self.resize(800, 700)
         #self.setStyleSheet("background: black")
 
-    #配合highlight_quest使用
-    quest_state_0 = 0
-    quest_state_1 = 0
-    quest_state_2 = 0
-
     def mousePressEvent(self, e):
         
         x = int((e.x()-200)/80) 
@@ -68,22 +81,33 @@ class TimeBridgeGUI(QWidget):
         text = "x: {0},  y: {1}".format(x, y)
         self.label.setText(text)
 
-        if (e.x() >= 200 and e.x() <= 600) and (e.y() >=180 and e.y() <= 520):
-        	quest_state_0 = 10 * y + x
+        if ((e.x() >= 200 and e.x() <= 600) and (e.y() >=180 and e.y() <= 520) and self.quest_reseived == 1):
+            self.quest_state_0 = 10 * y + x
+            self.quest_reseived = 0;
+
 
     def paintEvent(self, e):
         qp = QPainter()
         qp.begin(self)
-        self.draw_player_area(qp)
+        if (self.paint_stage == 0 and self.paint_flag == 0):
+            self.draw_player_area(qp)
+            self.draw_bid_area(qp)
+            self.draw_bid_text(qp)
+        elif (self.paint_stage == 0 and self.paint_flag == 1):
+            self.draw_bid_update(qp)
+            self.draw_bid_text(qp)
+        elif (self.paint_stage == 1 and self.paint_flag == 0):
+            self.draw_player_area(qp)
+            self.draw_play_area(qp)
+            self.draw_play_text(qp)
         qp.end()
 
     def draw_player_area(self, qp):
       
         col = QColor(0, 0, 0)
         col.setNamedColor('#d4d4d4')
-        pen = QPen(Qt.black, 1, Qt.SolidLine)
         qp.setPen(col)
-		#基础区域
+        #基础区域
         qp.setBrush(QColor(180, 180, 180))
         qp.drawRect(200, 0, 400, 91)
         qp.drawRect(371.5, 93, 57, 87)
@@ -93,8 +117,11 @@ class TimeBridgeGUI(QWidget):
         qp.drawRect(709, 150, 91, 400)
         qp.drawRect(100, 306.5, 57, 87)
         qp.drawRect(643, 306.5, 57, 87)
+        qp.drawRect(200, 180, 400, 336)
+
+    def draw_bid_area(self, qp):
         #叫牌区域
-        qp.drawRect(200, 180, 400, 340)
+        pen = QPen(Qt.black, 1, Qt.SolidLine)
         qp.setPen(pen)
         qp.drawLine(200, 228, 600, 228)
         qp.drawLine(200, 276, 600, 276)
@@ -102,31 +129,67 @@ class TimeBridgeGUI(QWidget):
         qp.drawLine(200, 372, 600, 372)
         qp.drawLine(200, 420, 600, 420)
         qp.drawLine(200, 468, 600, 468)
-        qp.drawLine(200, 516, 600, 516)
-        qp.drawLine(280, 180, 280, 520)
-        qp.drawLine(360, 180, 360, 520)
-        qp.drawLine(440, 180, 440, 520)
-        qp.drawLine(520, 180, 520, 520)
+        #qp.drawLine(200, 516, 600, 516)
+        qp.drawLine(280, 180, 280, 516)
+        qp.drawLine(360, 180, 360, 516)
+        qp.drawLine(440, 180, 440, 516)
+        qp.drawLine(520, 180, 520, 516)
+
+    def draw_bid_text(self, qp):
+        qp.setPen(QColor(71, 53, 135))
+        #qp.setFont(QFont("Microsoft YaHei", 8, 50, true))
+        for x in range(0, 5):
+            for y in range(1, 8):
+                text = '{0} {1}'.format(y, x)
+                qp.drawText(235 + 80 * x, 152 + 48 * y, text)
+
+    def draw_bid_update(self, qp):
+        xb = self.paint_beaker_2 % 10
+        yb = self.paint_beaker_2 / 10
+        qp.setBrush(Qcolor(paint_beaker_1 * 20, 100 + paint_beaker_1 * 10, 230 - paint_beaker_1 * 15))#皮这一下就很开心
+        qp.drawRect(bid_map(xb, yb))
+        qp.setBrush(Qcolor(200, 200, 200))#把失效区域涂灰
+        for x in range(0, 4):
+            for y in range(0, 6):
+                if (y < yb or (y == yb and x < xb)):
+                    qp.drawRect(bid_map(x, y))
+    
+
+    def draw_play_area(self, qp):
+        qp.setBrush(QColor(130, 130, 130))
+        qp.drawRect(200, 180, 400, 340)
+        qp.setBrush(QColor(201, 200, 205))
+        qp.drawRect(225, 190, 350, 320)
+        pen = QPen(Qt.black, 1, Qt.SolidLine)
+        qp.setPen(pen)
+        for x in range(1, 16):
+            qp.drawLine(225, 20 * x + 190, 575, 20 * x + 190)
+        for x in range(1, 7):
+            qp.drawLine(50 * x + 225, 190, 50 * x + 225, 510)
+
+    def draw_play_text(self, qp):
+        pass
+
+    def bid_update(self, BidPlayer, BidResult):
+        self.paint_beaker_1 = BidPlayer
+        self.paint_beaker_2 = BidResult
+        self.paint_stage = 0
+        self.paint_flag = 1
+        self.update()
+
+    def bid_to_play(self, num, color):
+        self.paint_stage = 1
+        self.paint_flag = 0
+        self.update()
+        pass
 
     def bid_map(xb, yb):
     #将叫牌区格位映射到坐标
-    	return (80 * x + 200, 48 * y + 180, 80, 48)
-
-    def bid_update(self, BidPlayer, BidResult):
-    	xb = BidResult % 10
-    	yb = BidResult / 10
-    	qp = QPainter()
-    	qp.begin(self)
-    	qp.setBrush(Qcolor(BidPlayer * 20, 100 + BidPlayer * 10, 230 - BidPlayer * 15))#皮这一下就很开心
-    	qp.drawRect(bid_map(xb, yb))
-    	qp.setBrush(Qcolor(200, 200, 200))#把失效区域涂灰
-    	for x in range(0, 4):
-    		for y in range(0, 6):
-    			if (y < yb or (y == yb and x < xb)):
-    				qp.drawRect(bid_map(x, y))
+        return (80 * x + 200, 48 * y + 180, 80, 48)
 
     def highlight_quest(self, area):
         if area == 0:
+            #self.quest_reseived = 1
             return self.quest_state_0
    
     def handle_click(self):
